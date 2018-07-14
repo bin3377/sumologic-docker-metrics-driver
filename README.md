@@ -1,1 +1,1 @@
-# sumologic-docker-metrics-driver
+# sumologic-docker-metrics-plugin

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-name=sumologic/sumologic-docker-metrics-driver
+name=sumologic/sumologic-docker-metrics-plugin
 docker build -f Dockerfile -t "$name" .
 
 id=$(docker create "$name")
