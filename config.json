@@ -1,0 +1,13 @@
+{
+  "description": "Sumo Logic metrics driver",
+  "documentation": "https://github.com/SumoLogic/sumologic-docker-metrics-driver",
+  "entrypoint": ["/metrics"],
+  "network": {
+    "type": "host"
+  },
+  "interface": {
+    "types": ["docker.logdriver/1.0"],
+    "socket": "metrics.sock"
+  },
+  "propagatedMount": "/run/docker"
+}
