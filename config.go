@@ -15,7 +15,7 @@ import (
 type sumoConfig struct {
 	sumoURL            *url.URL
 	pollInterval       time.Duration
-	raw                bool
+	asLog              bool
 	sourceCategory     string
 	sourceName         string
 	sourceHost         string
@@ -44,10 +44,10 @@ func readSumoConfigFromEnv() (*sumoConfig, error) {
 	} else {
 		fmt.Printf("SUMO_POLL_INTERVAL was set to %d\n", newConfig.pollInterval)
 	}
-	if newConfig.raw, err = strconv.ParseBool(os.Getenv("SUMO_RAW")); err != nil {
-		newConfig.raw = false
+	if newConfig.asLog, err = strconv.ParseBool(os.Getenv("SUMO_AS_LOG")); err != nil {
+		newConfig.asLog = false
 	}
-	fmt.Printf("SUMO_RAW was set to '%t'\n", newConfig.raw)
+	fmt.Printf("SUMO_AS_LOG was set to '%t'\n", newConfig.asLog)
 	newConfig.sourceCategory = os.Getenv("SUMO_SOURCE_CATEGORY")
 	fmt.Printf("SUMO_SOURCE_CATEGORY was set to '%s'\n", newConfig.sourceCategory)
 	newConfig.sourceName = os.Getenv("SUMO_SOURCE_NAME")

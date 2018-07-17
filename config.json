@@ -33,7 +33,7 @@
     },
     {
       "description": "Send metrics as log",
-      "name": "SUMO_RAW",
+      "name": "SUMO_AS_LOG",
       "settable": [
         "value"
       ],

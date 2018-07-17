@@ -150,7 +150,7 @@ func push(mf *dto.MetricFamily) error {
 	}
 	reader := bytes.NewReader(buffer.Bytes())
 	var contentType string
-	if config.raw {
+	if config.asLog {
 		contentType = "text/plain"
 	} else {
 		contentType = "application/vnd.sumologic.carbon2"
@@ -189,9 +189,9 @@ func appendLabels(labels map[string]string, pIntrinsics *[]string, pMetas *[]str
 	s := regexp.MustCompile("\\s")
 	for k, v := range labels {
 		tag := fmt.Sprintf("%s=%s", k, s.ReplaceAllLiteralString(v, "_"))
-		isIntrinsic := len(config.intrinsicLabels) > 0 && any(config.intrinsicLabels, func(s string) bool {
-			r, _ := regexp.Compile(s)
-			return r.MatchString(k)
+		isIntrinsic := len(config.intrinsicLabels) > 0 && any(config.intrinsicLabels, func(p string) bool {
+			ret, _ := regexp.MatchString(p, k)
+			return ret
 		})
 		if isIntrinsic {
 			*pIntrinsics = append(*pIntrinsics, tag)
@@ -232,13 +232,13 @@ func any(vs []string, f func(string) bool) bool {
 }
 
 func isIncluded(name string) bool {
-	inWhiteList := len(config.metricsIncluded) == 0 || any(config.metricsIncluded, func(v string) bool {
-		r, _ := regexp.Compile(v)
-		return r.MatchString(name)
+	inWhiteList := len(config.metricsIncluded) == 0 || any(config.metricsIncluded, func(p string) bool {
+		ret, _ := regexp.MatchString(p, name)
+		return ret
 	})
-	inBlackList := len(config.metricsExcluded) > 0 && any(config.metricsExcluded, func(v string) bool {
-		r, _ := regexp.Compile(v)
-		return r.MatchString(name)
+	inBlackList := len(config.metricsExcluded) > 0 && any(config.metricsExcluded, func(p string) bool {
+		ret, _ := regexp.MatchString(p, name)
+		return ret
 	})
 	return inWhiteList && !inBlackList
 }

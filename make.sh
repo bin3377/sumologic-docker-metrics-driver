@@ -15,5 +15,5 @@ rm -rf rootfs/proc rootfs/sys rootfs/go rootfs/dev
 docker plugin disable "$name"
 docker plugin rm -f "$name"
 docker plugin create "$name" .
-docker plugin enable "$name"
+# docker plugin enable "$name"
 # rm -rf rootfs
