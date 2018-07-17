@@ -10,7 +10,7 @@ mkdir -p rootfs
 docker export "$id" | tar -zxvf - -C rootfs
 docker rm "$id"
 
-rm -rf rootfs/proc rootfs/sys rootfs/go rootfs/etc rootfs/dev
+rm -rf rootfs/proc rootfs/sys rootfs/go rootfs/dev
 
 docker plugin disable "$name"
 docker plugin rm -f "$name"

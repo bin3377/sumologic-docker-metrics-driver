@@ -1,13 +1,123 @@
 {
   "description": "Sumo Logic metrics plugin",
-  "documentation": "https://github.com/SumoLogic/sumologic-docker-metrics-plugin",
-  "entrypoint": ["/metrics"],
+  "documentation": "-",
+  "entrypoint": [
+    "/metrics"
+  ],
   "network": {
     "type": "host"
   },
   "interface": {
-    "types": ["docker.metricscollector/1.0"],
+    "types": [
+      "docker.metricscollector/1.0"
+    ],
     "socket": "metrics.sock"
   },
-  "propagatedMount": "/run/docker"
+  "propagatedMount": "/run/docker",
+  "env": [
+    {
+      "description": "Sumo Logic HTTP source URL (required)",
+      "name": "SUMO_URL",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "The time interval for sending metrics",
+      "name": "SUMO_POLL_INTERVAL",
+      "settable": [
+        "value"
+      ],
+      "value": "2s"
+    },
+    {
+      "description": "Send metrics as log",
+      "name": "SUMO_RAW",
+      "settable": [
+        "value"
+      ],
+      "value": "false"
+    },
+    {
+      "description": "Source Category override",
+      "name": "SUMO_SOURCE_CATEGORY",
+      "settable": [
+        "value"
+      ],
+      "value": "docker_engine_metrics"
+    },
+    {
+      "description": "Source Name override",
+      "name": "SUMO_SOURCE_NAME",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "Source Host override",
+      "name": "SUMO_SOURCE_HOST",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "Only the fields which full name matching these RegEx pattern(s) will be included in the result; split by comma",
+      "name": "SUMO_METRICS_INCLUDED",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "The fields which full name matching these RegEx pattern(s) will be ignored in the result; split by comma",
+      "name": "SUMO_METRICS_EXCLUDED",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "Labels are using as intrinsic tag(s); split by comma",
+      "name": "SUMO_INTRINSIC_LABELS",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "extra intrinsic tags send with all data points",
+      "name": "SUMO_EXTRA_INTRINSIC_TAGS",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "extra meta tags send with all data points",
+      "name": "SUMO_EXTRA_META_TAGS",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "The root CA for HTTPs protocol",
+      "name": "SUMO_ROOT_CA_PATH",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    },
+    {
+      "description": "The URL of proxy server",
+      "name": "SUMO_PROXY_URL",
+      "settable": [
+        "value"
+      ],
+      "value": ""
+    }
+  ]
 }

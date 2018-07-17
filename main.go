@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -80,20 +82,22 @@ func poller() {
 		select {
 		case <-ticker:
 			if err := poll(); err != nil {
-				logrus.Fatalln(err)
+				logrus.Errorf("Error when polling data from docker - %s\n", err.Error())
 			}
 		}
 	}
-
 }
 
 // Pusher - push carbon v2 data points to backend from mfChan
 func pusher() {
 	fmt.Println(">>>>>>>> Start pusher")
 	defer fmt.Println("<<<<<<<< Stop pusher")
+	if err := ping(); err != nil {
+		logrus.Fatalf("Error [%s] when pinging SumoLogic backend\n", err.Error())
+	}
 	for mf := range mfChan {
 		if err := push(mf); err != nil {
-			logrus.Fatalln(err)
+			logrus.Errorf("Error when sending to Sumo backend - %s\n", err.Error())
 		}
 	}
 }
@@ -120,57 +124,38 @@ func poll() error {
 	return nil
 }
 
+func ping() error {
+	var reader io.Reader
+	reader = strings.NewReader("")
+	return postSumo(reader, "text/plain")
+}
+
 func push(mf *dto.MetricFamily) error {
 	var err error
-	t := &http.Transport{
-		Proxy:           http.ProxyURL(config.proxyURL),
-		TLSClientConfig: config.tlsConfig,
-	}
-
-	client := &http.Client{
-		Transport: t,
-		Timeout:   10 * time.Second,
-	}
 	var buffer bytes.Buffer
-	gzipWriter, err := gzip.NewWriterLevel(&buffer, -1)
-	if err != nil {
-		return err
-	}
-	defer gzipWriter.Close()
 
 	f := prom2json.NewFamily(mf)
 	msgs := toCarbonV2(f)
+	if 0 == len(msgs) {
+		logrus.Debug("Skipping a MetricFamily with no Value point\n")
+		return nil
+	}
+
 	for _, msg := range msgs {
 		line := msg + "\n"
-		fmt.Print(line)
-		if _, err := gzipWriter.Write([]byte(line)); err != nil {
-			logrus.Errorln(err)
+		if _, err = buffer.WriteString(line); err != nil {
+			logrus.Errorf("Error [%s] when writing line: %s\n", err.Error(), line)
 		}
+		// fmt.Println(line)
 	}
-	request, err := http.NewRequest("POST", config.sumoURL.String(), bytes.NewBuffer(buffer.Bytes()))
-	if err != nil {
-		return err
+	reader := bytes.NewReader(buffer.Bytes())
+	var contentType string
+	if config.raw {
+		contentType = "text/plain"
+	} else {
+		contentType = "application/vnd.sumologic.carbon2"
 	}
-	request.Header.Add("Content-Encoding", "gzip")
-	request.Header.Add("X-Sumo-Category", config.sourceCategory)
-	request.Header.Add("X-Sumo-Name", config.sourceName)
-	request.Header.Add("X-Sumo-Host", config.sourceHost)
-	request.Header.Add("X-Sumo-Client", "docker-metrics-plugin")
-
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("HTTP %s responsed from backend - %s", response.Status, body)
-	}
-	return nil
+	return postSumo(reader, contentType)
 }
 
 func toCarbonV2(f *prom2json.Family) []string {
@@ -188,20 +173,27 @@ func toCarbonV2(f *prom2json.Family) []string {
 			copy(metas, config.extraMetaTags)
 			appendLabels(m.Labels, &intrinsics, &metas)
 
-			line := getDataLine(now, m, f.Name, intrinsics, metas)
-			res = append(res, line)
+			line := strings.TrimSpace(getDataLine(now, m, f.Name, intrinsics, metas))
+			if line != "" {
+				res = append(res, line)
+			}
 
 		default:
-			logrus.Infof("Type '%s' is ignored\n", reflect.TypeOf(item))
+			logrus.Debugf("Type '%s' is ignored\n", reflect.TypeOf(item))
 		}
 	}
 	return res
 }
 
 func appendLabels(labels map[string]string, pIntrinsics *[]string, pMetas *[]string) {
+	s := regexp.MustCompile("\\s")
 	for k, v := range labels {
-		tag := fmt.Sprintf("%s=%s", k, v)
-		if _, exist := config.intrinsicLabels[k]; exist {
+		tag := fmt.Sprintf("%s=%s", k, s.ReplaceAllLiteralString(v, "_"))
+		isIntrinsic := len(config.intrinsicLabels) > 0 && any(config.intrinsicLabels, func(s string) bool {
+			r, _ := regexp.Compile(s)
+			return r.MatchString(k)
+		})
+		if isIntrinsic {
 			*pIntrinsics = append(*pIntrinsics, tag)
 		} else {
 			*pMetas = append(*pMetas, tag)
@@ -210,7 +202,81 @@ func appendLabels(labels map[string]string, pIntrinsics *[]string, pMetas *[]str
 }
 
 func getDataLine(ts int64, m prom2json.Metric, name string, intrinsics []string, metas []string) string {
-	iTags := strings.Join(append(intrinsics, fmt.Sprintf("metric=%s", name)), " ")
-	mTags := strings.Join(metas, " ")
-	return fmt.Sprintf("%s  %s %s %d", iTags, mTags, m.Value, ts)
+	if !isIncluded("name") {
+		logrus.Debugf("Metric %s is filtered out\n", name)
+		return ""
+	}
+	iTags := strings.TrimSpace(strings.Join(append(intrinsics, fmt.Sprintf("metric=%s", name)), " "))
+	mTags := strings.TrimSpace(strings.Join(metas, " "))
+	value, err := strconv.ParseFloat(m.Value, 64)
+	if err != nil {
+		logrus.Debugf("Invalid value - %s = '%s'\n", name, m.Value)
+		return ""
+	}
+	var ret string
+	if 0 == len(mTags) {
+		ret = fmt.Sprintf("%s  %f %d", iTags, value, ts)
+	} else {
+		ret = fmt.Sprintf("%s  %s %f %d", iTags, mTags, value, ts)
+	}
+	return ret
+}
+
+func any(vs []string, f func(string) bool) bool {
+	for _, v := range vs {
+		if f(v) {
+			return true
+		}
+	}
+	return false
+}
+
+func isIncluded(name string) bool {
+	inWhiteList := len(config.metricsIncluded) == 0 || any(config.metricsIncluded, func(v string) bool {
+		r, _ := regexp.Compile(v)
+		return r.MatchString(name)
+	})
+	inBlackList := len(config.metricsExcluded) > 0 && any(config.metricsExcluded, func(v string) bool {
+		r, _ := regexp.Compile(v)
+		return r.MatchString(name)
+	})
+	return inWhiteList && !inBlackList
+}
+
+func postSumo(reader io.Reader, contentType string) error {
+	var err error
+	t := &http.Transport{
+		TLSClientConfig: config.tlsConfig,
+	}
+	if config.proxyURL.Path != "" {
+		t.Proxy = http.ProxyURL(config.proxyURL)
+	}
+	client := &http.Client{
+		Transport: t,
+		Timeout:   10 * time.Second,
+	}
+
+	request, err := http.NewRequest("POST", config.sumoURL.String(), reader)
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", contentType)
+	request.Header.Add("X-Sumo-Category", config.sourceCategory)
+	request.Header.Add("X-Sumo-Name", config.sourceName)
+	request.Header.Add("X-Sumo-Host", config.sourceHost)
+	request.Header.Add("X-Sumo-Client", "docker-metrics-plugin")
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("HTTP %s responsed from backend - %s", response.Status, body)
+	}
+	return nil
 }
