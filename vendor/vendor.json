@@ -3,28 +3,28 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "tedpGUYUzWTxnH6hteiS8tuWRAs=",
-			"path": "github.com/Microsoft/go-winio",
-			"revision": "67921128fb397dd80339870d2193d6b1e6856fd4",
-			"revisionTime": "2018-06-25T20:58:01Z"
+			"checksumSHA1": "ag4CscDKi8ZBExU8jJf03rxonF0=",
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "14aad3d5ea4c323bcd7a2137e735da24a76e814c",
+			"revisionTime": "2018-07-15T08:23:32Z"
 		},
 		{
-			"checksumSHA1": "DvwvOlPNAgRntBzt3b3OSRMS2N4=",
+			"checksumSHA1": "bKMZjd2wPw13VwoE7mBeSv5djFA=",
+			"path": "github.com/matttproud/golang_protobuf_extensions/pbutil",
+			"revision": "c12348ce28de40eed0136aa2b644d0ee0650e56c",
+			"revisionTime": "2016-04-24T11:30:07Z"
+		},
+		{
+			"checksumSHA1": "V8xkqgmP66sq2ZW4QO5wi9a4oZE=",
 			"path": "github.com/prometheus/client_model/go",
-			"revision": "6f3806018612930941127f2a7c6c453ba2c527d2",
-			"revisionTime": "2017-02-16T18:52:47Z"
+			"revision": "5c3871d89910bfb32f5fcab2aa4b9ec68e65a99f",
+			"revisionTime": "2018-07-12T10:51:10Z"
 		},
 		{
-			"checksumSHA1": "2MgT7ER9GkHFZvEvfECzzxQkQjI=",
+			"checksumSHA1": "6ttUUxieXJhpzwMf/DzQ+HYZRvg=",
 			"path": "github.com/prometheus/prom2json",
-			"revision": "c58e08f6cfccd0d053ad121f8ea25bae28a79c6a",
-			"revisionTime": "2017-07-14T17:36:29Z"
-		},
-		{
-			"checksumSHA1": "P8Y8GFwxybTfltfh8Q0lHqlEYIM=",
-			"path": "golang.org/x/sys/windows",
-			"revision": "ac767d655b305d4e9612f5f6e33120b9176c4ad4",
-			"revisionTime": "2018-07-08T03:57:06Z"
+			"revision": "7b8ed2aed12952701e60d92bd2d91209dcd5eb1c",
+			"revisionTime": "2018-06-20T21:57:46Z"
 		}
 	],
 	"rootPath": "sumologic-docker-metrics-plugin"
