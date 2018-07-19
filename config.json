@@ -2,7 +2,7 @@
   "description": "Sumo Logic metrics plugin",
   "documentation": "-",
   "entrypoint": [
-    "/metrics"
+    "/usr/bin/sumologic-docker-metrics-plugin"
   ],
   "network": {
     "type": "host"

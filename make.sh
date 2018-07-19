@@ -1,15 +1,13 @@
 #!/bin/sh
 
 name=sumologic/sumologic-docker-metrics-plugin
-docker build -f Dockerfile -t "$name" .
 
-id=$(docker create "$name")
-
+docker build -f Dockerfile -t rootfsimage .
+id=$(docker create "$name" true)
 rm -rf rootfs
-mkdir -p rootfs
-docker export "$id" | tar -zxvf - -C rootfs
-docker rm "$id"
-
+mkdir rootfs
+docker export "$id" | tar -x -C rootfs
+docker rm -vf "$id"
 rm -rf rootfs/proc rootfs/sys rootfs/go rootfs/dev
 
 docker plugin disable "$name"

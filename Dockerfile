@@ -2,12 +2,16 @@
 
 FROM  golang as builder
 
-RUN mkdir -p /go/src/github.com/sumologic/sumologic-docker-metrics-plugin
-COPY . /go/src/github.com/sumologic/sumologic-docker-metrics-plugin
-RUN cd /go/src/github.com/sumologic/sumologic-docker-metrics-plugin && \
-  go get && \
-  CGO_ENABLED=0 go build -tags netgo -o metrics
-RUN mkdir -p /run/docker
+WORKDIR /go/src/github.com/sumologic/sumologic-docker-metrics-plugin
+COPY . .
+
+ARG GOOS=linux
+ARG GOARCH=amd64
+ARG GOARM=
+
+RUN go get && \
+    CGO_ENABLED=0 go build -tags netgo -o sumologic-docker-metrics-plugin && \
+    mkdir -p /run/docker
 
 ###############################################################################
 
@@ -18,15 +22,13 @@ RUN apt-get update &&  \
     rm -rf /var/lib/apt/lists/*
 
 RUN cp /etc/ca-certificates.conf /tmp/caconf && cat /tmp/caconf | \
-  grep -v "mozilla/CNNIC_ROOT\.crt" > /etc/ca-certificates.conf && \
-  update-ca-certificates --fresh
+    grep -v "mozilla/CNNIC_ROOT\.crt" > /etc/ca-certificates.conf && \
+    update-ca-certificates --fresh
 
 ###############################################################################
 
 FROM scratch
 
-COPY --from=builder /go/src/github.com/sumologic/sumologic-docker-metrics-plugin/metrics /metrics
+COPY --from=builder /go/src/github.com/sumologic/sumologic-docker-metrics-plugin/sumologic-docker-metrics-plugin /usr/bin/sumologic-docker-metrics-plugin
 COPY --from=builder /run/docker /run/docker
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-
-ENTRYPOINT ["/metrics"]
