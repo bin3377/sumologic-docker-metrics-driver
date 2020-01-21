@@ -1,6 +1,6 @@
 # SumoLogic Docker Metrics Plugin
 
-Experimental
+Experimental Docker metrics plugin for sending metrics to SumoLogic backend
 
 ## Installation
 
